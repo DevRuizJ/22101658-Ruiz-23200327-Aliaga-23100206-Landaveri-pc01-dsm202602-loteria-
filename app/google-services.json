@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "123456789012",
-    "project_id": "loteriaapp-dpa",
-    "storage_bucket": "loteriaapp-dpa.appspot.com"
+    "project_number": "60530278136",
+    "project_id": "loteriaapp-fd5e5",
+    "storage_bucket": "loteriaapp-fd5e5.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:1234567890abcdef",
+        "mobilesdk_app_id": "1:60530278136:android:4582c3902dbc04a0c1450d",
         "android_client_info": {
           "package_name": "dev.ruizj.loteriaapp_dpa"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDummyKeyForTestingAndBuilding123456"
+          "current_key": "AIzaSyA1TV7jF-bPIIAUAuqCi2qBV6i-Rmrl70k"
         }
       ],
       "services": {
