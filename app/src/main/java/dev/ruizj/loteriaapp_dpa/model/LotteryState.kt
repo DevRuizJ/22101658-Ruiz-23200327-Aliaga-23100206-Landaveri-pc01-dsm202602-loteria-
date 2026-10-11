@@ -8,15 +8,22 @@ data class LotteryState(
     val errorMessage: String? = null,
     val successMessage: String? = null
 ) {
+    val publishedBallsCount: Int
+        get() = currentDraw.drawnNumbers.size.coerceAtMost(6)
+
     val matchedNumbers: List<Int>
         get() = userTicket?.numbers?.filter { currentDraw.drawnNumbers.contains(it) } ?: emptyList()
 
     val hitsCount: Int
         get() = matchedNumbers.size
 
-    val isWinner: Boolean
-        get() = hitsCount == 6
+    val isDrawFinishedAndComplete: Boolean
+        get() = currentDraw.status == DrawStatus.FINISHED && currentDraw.drawnNumbers.size >= 6
 
-    val hitsPercentage: Float
-        get() = (hitsCount / 6.0f) * 100f
+    val finalResultText: String?
+        get() {
+            return if (isDrawFinishedAndComplete) {
+                if (hitsCount == 6) "GANADOR" else "SIGUE INTENTANDO"
+            } else null
+        }
 }

@@ -22,17 +22,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SentimentDissatisfied
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -71,9 +73,10 @@ fun LiveDrawScreen(
     val currentDraw = lotteryState.currentDraw
     val userTicket = lotteryState.userTicket
     val drawnNumbers = currentDraw.drawnNumbers
+    val publishedCount = lotteryState.publishedBallsCount
     val matchedNumbers = lotteryState.matchedNumbers
     val hitsCount = lotteryState.hitsCount
-    val isWinner = lotteryState.isWinner
+    val finalResult = lotteryState.finalResultText
 
     Scaffold(
         topBar = {
@@ -81,7 +84,7 @@ fun LiveDrawScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Seguimiento en Vivo",
+                            text = "Seguimiento del Sorteo",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -125,7 +128,7 @@ fun LiveDrawScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Draw Status Banner
+            // Draw Header & Metrics Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -146,114 +149,218 @@ fun LiveDrawScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    val (statusText, statusColor) = when (currentDraw.status) {
-                        DrawStatus.OPEN -> "ABIERTO - Esperando inicio del sorteo" to Color(0xFF2E7D32)
-                        DrawStatus.IN_PROGRESS -> "🔴 EN VIVO - Sorteando bolillas" to Color(0xFFD81B60)
-                        DrawStatus.FINISHED -> "FINALIZADO" to Color(0xFF424242)
-                    }
-
-                    Text(
-                        text = statusText,
-                        color = statusColor,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            // Winner / Progress Banner
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                val bannerBg = if (isWinner) Color(0xFFFFD54F) else if (hitsCount >= 4) Color(0xFFC8E6C9) else MaterialTheme.colorScheme.surface
-                val bannerBorderColor = if (isWinner) Color(0xFFFFB300) else Color.Transparent
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    colors = CardDefaults.cardColors(containerColor = bannerBg),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        if (isWinner) {
-                            Icon(
-                                imageVector = Icons.Default.EmojiEvents,
-                                contentDescription = "Trophy",
-                                tint = Color(0xFFE65100),
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
+                        // Bolillas publicadas
+                        Column {
                             Text(
-                                text = "🎉 ¡JUGADA GANADORA! 🎉",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFFE65100),
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "¡Felicidades! Has acertado los 6 números del sorteo.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF3E2723),
-                                textAlign = TextAlign.Center
-                            )
-                        } else {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Numbers,
-                                    contentDescription = "Hits",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Progreso: $hitsCount de 6 Aciertos",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            val progress = (hitsCount / 6.0f)
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(10.dp),
-                                color = if (hitsCount >= 4) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = when {
-                                    currentDraw.status == DrawStatus.FINISHED && hitsCount < 6 -> "Sorteo finalizado. No acertó los 6 números."
-                                    hitsCount == 0 -> "Aún sin aciertos. ¡Sigue el sorteo en tiempo real!"
-                                    else -> "¡Llevas $hitsCount aciertos! (${(progress * 100).toInt()}%)"
-                                },
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "Bolillas publicadas:",
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$publishedCount de 6",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Aciertos
+                        Column {
+                            Text(
+                                text = "Aciertos:",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$hitsCount",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hitsCount == 6) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                 }
             }
 
-            // Drawn Balls Section (Publicadas desde Firebase Console)
+            // Draw Status / Result Banner
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                when {
+                    // Sorteo Abierto
+                    currentDraw.status == DrawStatus.OPEN -> {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.HourglassEmpty,
+                                    contentDescription = "Wait",
+                                    tint = Color(0xFF2E7D32),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Esperando inicio del sorteo...",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20)
+                                )
+                            }
+                        }
+                    }
+
+                    // Sorteo en Curso
+                    currentDraw.status == DrawStatus.IN_PROGRESS -> {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Numbers,
+                                    contentDescription = "In Progress",
+                                    tint = Color(0xFFE65100),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Sorteo en curso",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE65100)
+                                )
+                            }
+                        }
+                    }
+
+                    // Sorteo Finalizado pero con menos de 6 bolillas
+                    currentDraw.status == DrawStatus.FINISHED && publishedCount < 6 -> {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.HourglassEmpty,
+                                    contentDescription = "Waiting Results",
+                                    tint = Color(0xFF512DA8),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Esperando publicación de resultados...",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF311B92)
+                                )
+                            }
+                        }
+                    }
+
+                    // Sorteo Finalizado con 6 bolillas: Muestra RESULTADO DEFINITIVO
+                    finalResult == "GANADOR" -> {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFD54F)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.EmojiEvents,
+                                    contentDescription = "Ganador",
+                                    tint = Color(0xFFE65100),
+                                    modifier = Modifier.size(52.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "GANADOR",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFE65100),
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "¡Acierto total de los 6 números!",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF3E2723)
+                                )
+                            }
+                        }
+                    }
+
+                    finalResult == "SIGUE INTENTANDO" -> {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SentimentDissatisfied,
+                                    contentDescription = "Sigue intentando",
+                                    tint = Color(0xFFC62828),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "SIGUE INTENTANDO",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFC62828),
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "Obtuviste $hitsCount aciertos de 6.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF37474F)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Drawn Balls Section (Firestore Live)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -272,7 +379,7 @@ fun LiveDrawScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Bolillas Sorteadas (${drawnNumbers.size}):",
+                            text = "Bolillas Sorteadas ($publishedCount):",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -282,7 +389,7 @@ fun LiveDrawScreen(
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Firebase Live",
+                                text = "Firestore Live",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -304,7 +411,7 @@ fun LiveDrawScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Aún no hay bolillas sorteadas. Publícalas desde la Consola de Firebase en 'draws/test_draw/drawnNumbers'.",
+                                text = "Aún no hay bolillas sorteadas en 'draws/test_draw/drawnNumbers'.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -314,7 +421,7 @@ fun LiveDrawScreen(
                             horizontalArrangement = Arrangement.Center,
                             maxItemsInEachRow = 6
                         ) {
-                            drawnNumbers.forEach { ball ->
+                            drawnNumbers.take(6).forEach { ball ->
                                 val isUserMatch = userTicket?.numbers?.contains(ball) == true
                                 Box(modifier = Modifier.padding(4.dp)) {
                                     BallItem(
@@ -378,14 +485,15 @@ fun LiveDrawScreen(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .background(Color(0xFF2E7D32), RoundedCornerShape(2.dp))
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Matched",
+                                tint = Color(0xFF2E7D32),
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Verde = Acierto",
+                                text = "Acierto marcado en verde",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
